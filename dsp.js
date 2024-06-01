@@ -93,32 +93,6 @@ setupTypedArray("Uint8Array",   "WebGLUnsignedByteArray");
  *
  * @returns The inverted sample buffer
  */
-
-class LowPassFilter {
-    constructor(sampleRate, cutoffFrequency) {
-        this.sampleRate = sampleRate;
-        this.cutoffFrequency = cutoffFrequency;
-        this.alpha = this.calculateAlpha(cutoffFrequency, sampleRate);
-        this.prevY = 0;
-    }
-
-    calculateAlpha(cutoffFrequency, sampleRate) {
-        const RC = 1.0 / (cutoffFrequency * 2 * Math.PI);
-        const dt = 1.0 / sampleRate;
-        return dt / (RC + dt);
-    }
-
-    filter(x) {
-        const y = (1 - this.alpha) * x + this.alpha * this.prevY;
-        this.prevY = y;
-        return y;
-    }
-}
-
-// Adding LowPassFilter to the DSP object
-DSP.LowPassFilter = LowPassFilter;
-
-
 DSP.invert = function(buffer) {
   for (var i = 0, len = buffer.length; i < len; i++) {
     buffer[i] *= -1;
@@ -2341,7 +2315,7 @@ Reverb.prototype.process = function (interleavedSamples){
     } else {
         // Browser globals (root is window)
         root.returnExports = factory();
-    }
+  }
 }(this, function () {
-    return DSP;
+  return DSP;
 }));
