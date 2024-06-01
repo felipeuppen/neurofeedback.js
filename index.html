@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Conectar Muse</title>
+    <script src="https://github.com/felipeuppen/neurofeedback/blob/main/dsp.js"></script>
+    <script src="https://github.com/felipeuppen/neurofeedback/blob/main/Muse.js"></script>
+    <script src="https://github.com/felipeuppen/neurofeedback/blob/main/main.js"></script>
+</head>
+<body>
+    <div id="relaxedTime">Tiempo Relajado: 0 segundos</div>
+    <div id="attentiveTime">Tiempo Atento: 0 segundos</div>
+    <button onclick="selectElectrodeFP1()">Select FP1</button>
+    <button onclick="selectElectrodeFP2()">Select FP2</button>
+    <button onclick="selectElectrodeTP9()">Select TP9</button>
+    <button onclick="selectElectrodeTP10()">Select TP10</button>
+
+    <div>Tiempo Relajado: <span id="relaxedTime">0</span> segundos</div>
+
+    <audio id="neurofeedbackAudio" preload="auto" src="https://github.com/felipeuppen/neurofeedback/blob/main/AudioFeedback.mp3"></audio>
+
+    <div>
+        <input type="checkbox" id="enableFilters" checked>
+        <label for="enableFilters">Habilitar Filtros</label>
+    </div>
+
+    <button id="connect">Conectar y Leer Datos</button>
+    <button id="disconnect" style="display:none;">Desconectar</button>
+    <div id="batteryLevel">Nivel de batería: --%</div>
+    <div id="eegData">
+        <div id="eegFP1">FP1: --</div>
+    </div>
+    <div>
+        <label for="showYAxisLegend">Mostrar leyenda del eje Y:</label>
+        <select id="showYAxisLegend">
+            <option value="true">Sí</option>
+            <option value="false" selected>No</option>
+        </select>
+    </div>
+
+    <div>
+        <label for="amplitudeScale">Escala de Amplitud:</label>
+        <input type="range" id="amplitudeScale" min="1" max="1500" value="512" step="1">
+        <span id="scaleValue"></span>
+    </div>
+    
+    <div id="warningMessage"></div>
+
+    <script defer>
+        let muse; // Declarar el objeto muse en el ámbito global
+        let selectedElectrodeIndex = 1; // Índice del electrodo seleccionado
+        let filtersEnabled = true; // Habilitar o deshabilitar filtros
+        let lpFilter = new LowPassFilter(256, 50); // Filtro de paso bajo
+
+        window.onload = function() {
+            document.getElementById('connect').addEventListener('click', function() {
+                connectAndReadData(); // Llamar a la función para conectar y leer datos
+            });
+            document.getElementById('disconnect').addEventListener('click', disconnect); // Añadir el evento para el botón de desconectar
+        };
+
+        async function connectAndReadData() {
+            try {
+                muse = new Muse(); // Asignar el objeto muse a la variable global
+                await muse.connect();
+                await muse.start();
+                document.getElementById('connect').style.display = 'none';
+                document.getElementById('disconnect').style.display = 'inline';
+                console.log("Conectado exitosamente.");
+                bubble_fn_MuseStatus("connected");
+
+                console.log("Objeto Muse:", muse); // Añadir mensaje de depuración
+
+                if (muse.eeg && muse.eeg[selectedElectrodeIndex]) {
+                    setInterval(() => {
+                        let eegValue = muse.eeg[selectedElectrodeIndex].read();
+                        if (eegValue !== null) {
+                            let filteredValue = filtersEnabled ? lpFilter.filter(eegValue) : eegValue;
+                            filteredValue = Math.max(filteredValue, -400);
+                            document.getElementById("eegFP1").innerText = "Electrodo " + selectedElectrodeIndex + ": " + Math.abs(filteredValue).toFixed(2) + " uVrms";
+                            processEEGData(Math.abs(filteredValue));
+                            addToRecording(Math.abs(filteredValue));
+                        }
+                    }, 1000);
+                } else {
+                    console.error("eegReadings no está disponible en el objeto muse.");
+                }
+
+                setInterval(updateBatteryLevel, 1000);
+
+            } catch (error) {
+                console.error("Error al conectar con Muse:", error);
+            }
+        }
+
+        function disconnect() {
+            if (muse) {
+                muse.disconnect();
+                console.log("Desconectado exitosamente.");
+                document.getElementById('disconnect').style.display = 'none';
+                document.getElementById('connect').style.display = 'inline';
+                bubble_fn_MuseStatus("disconnected");
+            }
+        }
+
+        function updateBatteryLevel() {
+            if (muse && muse.batteryLevel != null) {
+                document.getElementById("batteryLevel").innerText = "Nivel de batería: " + muse.batteryLevel.toFixed(2) + "%";
+                bubble_fn_MuseBattery(muse.batteryLevel.toFixed(2));
+            }
+        }
+
+        function processEEGData(value) {
+            console.log("Procesando datos EEG:", value);
+        }
+
+        function addToRecording(value) {
+            console.log("Añadiendo a la grabación:", value);
+        }
+    </script>
+</body>
+</html>
