@@ -2319,3 +2319,25 @@ Reverb.prototype.process = function (interleavedSamples){
 }(this, function () {
   return DSP;
 }));
+
+class LowPassFilter {
+    constructor(sampleRate, cutoffFrequency) {
+        this.sampleRate = sampleRate;
+        this.cutoffFrequency = cutoffFrequency;
+        this.alpha = this.calculateAlpha(cutoffFrequency, sampleRate);
+        this.prevY = 0;
+    }
+
+    calculateAlpha(cutoffFrequency, sampleRate) {
+        const RC = 1.0 / (cutoffFrequency * 2 * Math.PI);
+        const dt = 1.0 / sampleRate;
+        return dt / (RC + dt);
+    }
+
+    filter(x) {
+        const y = (1 - this.alpha) * x + this.alpha * this.prevY;
+        this.prevY = y;
+        return y;
+    }
+}
+
