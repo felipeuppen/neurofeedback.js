@@ -159,7 +159,7 @@ class Muse {
        ofs+=6;
     }
   }
-  controlData (event) {
+ controlData(event) {
     var data = event.target.value;
     data = data.buffer ? data: new DataView(data);
     var buf = new Uint8Array(data.buffer);
@@ -167,12 +167,16 @@ class Muse {
     for (var i = 0; i<str.length;i++) {
       var c = str[i];
       this.infoFragment = this.infoFragment + c;
-      // { make bracket matching happy
-      if (c=='}') {
-        var tmp = JSON.parse(this.infoFragment);
-        this.infoFragment = "";
-        for (const key in tmp) {
-          this.info[key] = tmp[key];
+      if (c === '}') {
+        try {
+          var tmp = JSON.parse(this.infoFragment);
+          this.infoFragment = "";
+          for (const key in tmp) {
+            this.info[key] = tmp[key];
+          }
+        } catch (e) {
+          console.error('Error parsing JSON in controlData:', e, this.infoFragment);
+          this.infoFragment = ""; // Clear the fragment to avoid repeated errors
         }
       }
     }
