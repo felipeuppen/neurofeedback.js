@@ -1,3 +1,5 @@
+console.log("main.js has been loaded.");
+
 class MovingAverage {
     constructor(size) {
         this.size = size;
@@ -86,6 +88,7 @@ var lpFilter = new LowPassFilter(256, 50);
 var filtersEnabled = true;
 
 async function connectAndReadData() {
+    console.log("connectAndReadData function called.");
     muse = new Muse();
     await muse.connect();
     document.getElementById('connect').style.display = 'none';
@@ -154,3 +157,5 @@ window.adjustAmplitudeScale = adjustAmplitudeScale;
 
 // Placeholder for the voltage graph update function
 window.updateVoltageGraph = null;
+
+console.log("All functions have been registered globally.");
