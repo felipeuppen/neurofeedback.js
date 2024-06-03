@@ -120,13 +120,6 @@ function toggleFilters() {
     filtersEnabled = document.getElementById('enableFilters').checked;
 }
 
-function toggleYAxisLegend() {
-    var showLegend = document.getElementById('showYAxisLegend').value === 'true';
-    chart.options.scales.yAxes[0].scaleLabel.display = showLegend;
-    chart.options.scales.yAxes[0].ticks.display = showLegend;
-    chart.update();
-}
-
 function readEEGData() {
     let eegValue = muse.eeg[selectedElectrodeIndex].read(); // Usa el índice seleccionado
     if (eegValue !== null) {
@@ -134,97 +127,30 @@ function readEEGData() {
         filteredValue = Math.max(filteredValue, -400);
         document.getElementById("eegFP1").innerText = "Electrode " + selectedElectrodeIndex + ": " + Math.abs(filteredValue).toFixed(2) + " uVrms";
         processEEGData(Math.abs(filteredValue));
-        updateGraph(filteredValue);
         addToRecording(Math.abs(filteredValue));
+
+        // Update the voltage graph if the function is available
+        if (window.updateVoltageGraph) {
+            window.updateVoltageGraph(Math.abs(filteredValue));
+        }
     }
 }
 
 function adjustAmplitudeScale(newScale) {
     amplitudeScale = 500 / newScale;
     document.getElementById('scaleValue').innerText = `${newScale.toFixed(1)}x`;
-    updateGraph(0);
-}
-
-var ctx = document.getElementById('eegGraph').getContext('2d');
-var timeStamps = [...Array(1000).keys()].map(x => -8000 + x * 50);
-var voltages = new Array(1000).fill(0);
-
-var chart = new Chart(ctx, {
-    type: 'line',
-    data: {
-        labels: timeStamps,
-        datasets: [{
-            label: '',
-            data: voltages,
-            borderColor: '#8F5A7A',
-            tension: 0.1,
-            pointRadius: 0,
-            borderWidth: 1
-        }]
-    },
-    options: {
-        elements: {
-            point: {
-                radius: 0
-            }
-        },
-        tooltips: {
-            enabled: false
-        },
-        scales: {
-            yAxes: [{
-                ticks: {
-                    min: -400,
-                    max: 400,
-                    stepSize: 100
-                },
-                gridLines: {
-                    display: false
-                }
-            }],
-            xAxes: [{
-                gridLines: {
-                    display: false
-                },
-                ticks: {
-                    display: false
-                }
-            }]
-        },
-        hover: {
-            mode: null
-        },
-        responsive: true,
-        maintainAspectRatio: false
-    }
-});
-
-function updateGraph(newVoltage) {
-    var scaledVoltage = Math.abs(newVoltage * amplitudeScale);
-    scaledVoltage = Math.max(Math.min(scaledVoltage, 400), 0);
-    voltages.shift();
-    voltages.push(scaledVoltage);
-    chart.update();
-    let message = scaledVoltage > 100 ? "Valor fuera de rango normal" : "";
-    document.getElementById("warningMessage").innerText = message;
 }
 
 document.getElementById('amplitudeScale').addEventListener('input', function() {
     adjustAmplitudeScale(this.valueAsNumber);
 });
 
-function toggleYAxisDisplay(show) {
-    chart.options.scales.yAxes.forEach(axis => {
-        axis.ticks.display = show;
-        axis.scaleLabel.display = show;
-    });
-    chart.update();
-}
+// Register functions globally
+window.connectAndReadData = connectAndReadData;
+window.disconnect = disconnect;
+window.toggleFilters = toggleFilters;
+window.readEEGData = readEEGData;
+window.adjustAmplitudeScale = adjustAmplitudeScale;
 
-window.toggleYAxisDisplay = toggleYAxisDisplay;
-
-document.getElementById('connect').addEventListener('click', connectAndReadData);
-document.getElementById('disconnect').addEventListener('click', disconnect);
-document.getElementById('enableFilters').addEventListener('change', toggleFilters);
-document.getElementById('showYAxisLegend').addEventListener('change', toggleYAxisLegend);
-
+// Placeholder for the voltage graph update function
+window.updateVoltageGraph = null;
