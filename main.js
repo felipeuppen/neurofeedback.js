@@ -89,15 +89,19 @@ var filtersEnabled = true;
 
 async function connectAndReadData() {
     console.log("connectAndReadData function called.");
-    muse = new Muse();
-    await muse.connect();
-    document.getElementById('connect').style.display = 'none';
-    document.getElementById('disconnect').style.display = 'inline';
-    console.log("Conectado exitosamente.");
-    bubble_fn_MuseStatus("connected");
-    adjustAmplitudeScale(512);
-    updateIntervals.push(setInterval(updateBatteryLevel, 1000));
-    updateIntervals.push(setInterval(readEEGData, 8));
+    try {
+        muse = new Muse();
+        await muse.connect();
+        document.getElementById('connect').style.display = 'none';
+        document.getElementById('disconnect').style.display = 'inline';
+        console.log("Conectado exitosamente.");
+        bubble_fn_MuseStatus("connected");
+        adjustAmplitudeScale(512);
+        updateIntervals.push(setInterval(updateBatteryLevel, 1000));
+        updateIntervals.push(setInterval(readEEGData, 8));
+    } catch (error) {
+        console.error("Error in connectAndReadData:", error);
+    }
 }
 
 function disconnect() {
@@ -124,18 +128,22 @@ function toggleFilters() {
 }
 
 function readEEGData() {
-    let eegValue = muse.eeg[selectedElectrodeIndex].read(); // Usa el índice seleccionado
-    if (eegValue !== null) {
-        let filteredValue = filtersEnabled ? lpFilter.filter(eegValue) : eegValue;
-        filteredValue = Math.max(filteredValue, -400);
-        document.getElementById("eegFP1").innerText = "Electrode " + selectedElectrodeIndex + ": " + Math.abs(filteredValue).toFixed(2) + " uVrms";
-        processEEGData(Math.abs(filteredValue));
-        addToRecording(Math.abs(filteredValue));
+    try {
+        let eegValue = muse.eeg[selectedElectrodeIndex].read(); // Usa el índice seleccionado
+        if (eegValue !== null) {
+            let filteredValue = filtersEnabled ? lpFilter.filter(eegValue) : eegValue;
+            filteredValue = Math.max(filteredValue, -400);
+            document.getElementById("eegFP1").innerText = "Electrode " + selectedElectrodeIndex + ": " + Math.abs(filteredValue).toFixed(2) + " uVrms";
+            processEEGData(Math.abs(filteredValue));
+            addToRecording(Math.abs(filteredValue));
 
-        // Update the voltage graph if the function is available
-        if (window.updateVoltageGraph) {
-            window.updateVoltageGraph(Math.abs(filteredValue));
+            // Update the voltage graph if the function is available
+            if (window.updateVoltageGraph) {
+                window.updateVoltageGraph(Math.abs(filteredValue));
+            }
         }
+    } catch (error) {
+        console.error("Error in readEEGData:", error);
     }
 }
 
@@ -154,8 +162,5 @@ window.disconnect = disconnect;
 window.toggleFilters = toggleFilters;
 window.readEEGData = readEEGData;
 window.adjustAmplitudeScale = adjustAmplitudeScale;
-
-// Placeholder for the voltage graph update function
-window.updateVoltageGraph = null;
 
 console.log("All functions have been registered globally.");
