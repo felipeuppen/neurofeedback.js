@@ -31,13 +31,11 @@ function sumPower(data, startFreq, endFreq) {
 // Función para procesar datos de EEG, realizar FFT y actualizar feedback
 function processEEGData(uVrms) {
     eegBuffer.push(uVrms);
-    console.log("EEG data received:", uVrms);
-    
     if (eegBuffer.length === FFT_SIZE) {
         const fft = new FFT(FFT_SIZE, 256);
         fft.forward(eegBuffer);
         const frequencies = fft.spectrum;
-        console.log("Frequencies calculated:", frequencies);
+        console.log('FFT Frequencies:', frequencies);
         updateNeurofeedback(frequencies);
         eegBuffer = []; // Reiniciar el buffer después de calcular FFT
     }
@@ -51,18 +49,11 @@ function updateNeurofeedback(frequencies) {
     }
 
     const totalPower = frequencies.reduce((a, b) => a + b, 0);
-    console.log("Total Power:", totalPower);
     const deltaPower = sumPower(frequencies, 0.5, 4) / totalPower;
     const thetaPower = sumPower(frequencies, 4, 8) / totalPower;
     const alphaPower = sumPower(frequencies, 8, 14) / totalPower;
     const betaPower = sumPower(frequencies, 14, 30) / totalPower;
     const gammaPower = sumPower(frequencies, 30, 50) / totalPower;
-
-    console.log("Delta:", deltaPower);
-    console.log("Theta:", thetaPower);
-    console.log("Alpha:", alphaPower);
-    console.log("Beta:", betaPower);
-    console.log("Gamma:", gammaPower);
 
     const relaxation = thetaPower + alphaPower;
     const focus = betaPower + gammaPower;
@@ -95,8 +86,30 @@ function updateNeurofeedback(frequencies) {
         gammaPower * 100
     ];
 
+    console.log('Frequency Band Powers:', powerData);
+
     frequencyChart.data.datasets[0].data = powerData;
     frequencyChart.update();
+
+    // Condiciones para actualizar cada tipo de segundos basados en potencias de banda
+    if ((deltaPower + thetaPower + alphaPower) > (betaPower + gammaPower)) {
+        fadeInAudio();
+        relaxedSeconds++;
+        document.getElementById('relaxedTime').textContent = relaxedSeconds.toString();
+        bubble_fn_relaxedSeconds(relaxedSeconds);
+    } else if ((betaPower + gammaPower) > (deltaPower + thetaPower + alphaPower)) {
+        fadeInAudio();
+        attentiveSeconds++;
+        document.getElementById('attentiveTime').textContent = attentiveSeconds.toString();
+        bubble_fn_attentiveSeconds(attentiveSeconds);
+    } else if ((alphaPower + thetaPower) > (deltaPower + betaPower + gammaPower)) {
+        fadeInAudio();
+        neutralSeconds++;
+        document.getElementById('neutralTime').textContent = neutralSeconds.toString();
+        bubble_fn_neutralSeconds(neutralSeconds);
+    } else {
+        fadeOutAudio();
+    }
 }
 
 // Funciones para manejar la reproducción y el volumen del audio
