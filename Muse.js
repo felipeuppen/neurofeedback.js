@@ -99,7 +99,7 @@ class Muse {
   decodeUnsigned24BitData(samples) {
     const samples24Bit = [];
     for (let i = 0; i < samples.length; i = i + 3) {
-      samples24Bit.push((samples[i] << 16) | (samples[i + 1] << 8) | samples[i + 2]);
+      samples24Bit.push((samples[i] << 16) | (samples[i + 1] << 8) | (samples[i + 2]));
     }
     return samples24Bit;
   }
@@ -109,7 +109,7 @@ class Muse {
       if (i % 3 === 0) {
          samples12Bit.push((samples[i] << 4) | (samples[i + 1] >> 4));
       } else {
-        samples12Bit.push(((samples[i] & 0xf) << 8) | samples[i + 1]);
+        samples12Bit.push(((samples[i] & 0xf) << 8) | (samples[i + 1]));
         i++;
       }
     }
@@ -159,26 +159,39 @@ class Muse {
        ofs+=6;
     }
   }
-controlData(event) {
+  controlData(event) {
     var data = event.target.value;
-    data = data.buffer ? data: new DataView(data);
+    data = data.buffer ? data : new DataView(data);
     var buf = new Uint8Array(data.buffer);
     var str = this.decodeInfo(buf);
-    for (var i = 0; i<str.length;i++) {
-      var c = str[i];
-      this.infoFragment = this.infoFragment + c;
-      if (c === '}') {
-        try {
-          var tmp = JSON.parse(this.infoFragment);
-          this.infoFragment = "";
-          for (const key in tmp) {
-            this.info[key] = tmp[key];
-          }
-        } catch (e) {
-          console.error('Error parsing JSON in controlData:', e, this.infoFragment);
-          this.infoFragment = ""; // Clear the fragment to avoid repeated errors
+    for (var i = 0; i < str.length; i++) {
+        var c = str[i];
+        this.infoFragment += c;
+        if (c === '}') {
+            try {
+                if (this.isValidJSON(this.infoFragment)) {
+                    var tmp = JSON.parse(this.infoFragment);
+                    this.infoFragment = "";
+                    for (const key in tmp) {
+                        this.info[key] = tmp[key];
+                    }
+                } else {
+                    console.error('Invalid JSON fragment:', this.infoFragment);
+                    this.infoFragment = ""; // Clear the fragment to avoid repeated errors
+                }
+            } catch (e) {
+                console.error('Error parsing JSON in controlData:', e, this.infoFragment);
+                this.infoFragment = ""; // Clear the fragment to avoid repeated errors
+            }
         }
-      }
+    }
+  }
+  isValidJSON(str) {
+    try {
+        JSON.parse(str);
+        return true;
+    } catch (e) {
+        return false;
     }
   }
   eegData (n,event) {
