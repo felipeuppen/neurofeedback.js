@@ -1,3 +1,7 @@
+<script>
+
+// neurofeedback.js
+
 // Configuración inicial
 let eegBuffer = [];
 const FFT_SIZE = 256;
@@ -36,51 +40,6 @@ function processEEGData(uVrms) {
         updateNeurofeedback(frequencies);
         eegBuffer = []; // Reiniciar el buffer después de calcular FFT
     }
-}
-
-// Inicializar el gráfico automáticamente cuando la página se carga
-document.addEventListener('DOMContentLoaded', setupFrequencyChart);
-
-function setupFrequencyChart() {
-    if (frequencyChart) {
-        frequencyChart.destroy(); // Destruir el gráfico existente si ya hay uno
-    }
-    const ctx = document.getElementById('frequencyChart').getContext('2d');
-    frequencyChart = new Chart(ctx, {
-        type: 'bar',
-        data: {
-            labels: ['Delta', 'Theta', 'Alpha', 'Beta', 'Gamma'],
-            datasets: [{
-                label: 'Potencia de Banda',
-                data: [0, 0, 0, 0, 0],
-                backgroundColor: [
-                    'rgba(255, 99, 132, 0.2)',
-                    'rgba(54, 162, 235, 0.2)',
-                    'rgba(255, 206, 86, 0.2)',
-                    'rgba(75, 192, 192, 0.2)',
-                    'rgba(153, 102, 255, 0.2)'
-                ],
-                borderColor: [
-                    'rgba(255, 99, 132, 1)',
-                    'rgba(54, 162, 235, 1)',
-                    'rgba(255, 206, 86, 1)',
-                    'rgba(75, 192, 192, 1)',
-                    'rgba(153, 102, 255, 1)'
-                ],
-                borderWidth: 1
-            }]
-        },
-        options: {
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    max: 100,
-                    stepSize: 10
-                }
-            },
-            maintainAspectRatio: false  // Esto asegura que las dimensiones del canvas se respeten
-        }
-    });
 }
 
 // Función de Neurofeedback basada en la potencia de las bandas de frecuencia
@@ -182,8 +141,4 @@ function enableAudioFeedback() {
     audioElement.play(); // Asegúrate de que el audio está listo para reproducirse
 }
 
-function displayFrequencyChart() {
-    console.log("Mostrando el gráfico de frecuencias.");
-    setupFrequencyChart(); // Configura y muestra el gráfico si aún no se ha hecho
-}
-
+</script>
