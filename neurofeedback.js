@@ -32,9 +32,11 @@ function sumPower(data, startFreq, endFreq) {
 function processEEGData(uVrms) {
     eegBuffer.push(uVrms);
     if (eegBuffer.length === FFT_SIZE) {
+        console.log("Buffer complete, processing FFT...");
         const fft = new FFT(FFT_SIZE, 256);
         fft.forward(eegBuffer);
         const frequencies = fft.spectrum;
+        console.log("Frequencies:", frequencies);
         updateNeurofeedback(frequencies);
         eegBuffer = []; // Reiniciar el buffer después de calcular FFT
     }
@@ -48,11 +50,14 @@ function updateNeurofeedback(frequencies) {
     }
 
     const totalPower = frequencies.reduce((a, b) => a + b, 0);
+    console.log("Total Power:", totalPower);
     const deltaPower = sumPower(frequencies, 0.5, 4) / totalPower;
     const thetaPower = sumPower(frequencies, 4, 8) / totalPower;
     const alphaPower = sumPower(frequencies, 8, 14) / totalPower;
     const betaPower = sumPower(frequencies, 14, 30) / totalPower;
     const gammaPower = sumPower(frequencies, 30, 50) / totalPower;
+
+    console.log("Band Powers - Delta:", deltaPower, "Theta:", thetaPower, "Alpha:", alphaPower, "Beta:", betaPower, "Gamma:", gammaPower);
 
     const relaxation = thetaPower + alphaPower;
     const focus = betaPower + gammaPower;
@@ -84,6 +89,8 @@ function updateNeurofeedback(frequencies) {
         betaPower * 100,
         gammaPower * 100
     ];
+
+    console.log("Power Data for Chart:", powerData);
 
     frequencyChart.data.datasets[0].data = powerData;
     frequencyChart.update();
