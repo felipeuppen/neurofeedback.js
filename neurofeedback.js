@@ -1,5 +1,3 @@
-<script>
-
 // neurofeedback.js
 
 // Configuración inicial
@@ -140,5 +138,3 @@ function enableAudioFeedback() {
     console.log("Feedback de audio activado.");
     audioElement.play(); // Asegúrate de que el audio está listo para reproducirse
 }
-
-</script>
