@@ -161,7 +161,7 @@ class Muse {
   }
 controlData(event) {
     var data = event.target.value;
-    data = data.buffer ? data : new DataView(data);
+    data = data.buffer ? data : new DataView(data.buffer);
     var buf = new Uint8Array(data.buffer);
     var str = this.decodeInfo(buf);
     for (var i = 0; i < str.length; i++) {
@@ -169,15 +169,10 @@ controlData(event) {
         this.infoFragment += c;
         if (c === '}') {
             try {
-                if (this.isValidJSON(this.infoFragment)) {
-                    var tmp = JSON.parse(this.infoFragment);
-                    this.infoFragment = "";
-                    for (const key in tmp) {
-                        this.info[key] = tmp[key];
-                    }
-                } else {
-                    console.error('Invalid JSON fragment:', this.infoFragment);
-                    this.infoFragment = ""; // Clear the fragment to avoid repeated errors
+                var tmp = JSON.parse(this.infoFragment);
+                this.infoFragment = "";
+                for (const key in tmp) {
+                    this.info[key] = tmp[key];
                 }
             } catch (e) {
                 console.error('Error parsing JSON in controlData:', e, this.infoFragment);
@@ -186,7 +181,6 @@ controlData(event) {
         }
     }
 }
-
   isValidJSON(str) {
     try {
         JSON.parse(str);
