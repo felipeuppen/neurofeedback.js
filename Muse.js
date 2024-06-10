@@ -159,7 +159,7 @@ class Muse {
        ofs+=6;
     }
   }
-  controlData(event) {
+controlData(event) {
     var data = event.target.value;
     data = data.buffer ? data : new DataView(data);
     var buf = new Uint8Array(data.buffer);
@@ -185,7 +185,8 @@ class Muse {
             }
         }
     }
-  }
+}
+
   isValidJSON(str) {
     try {
         JSON.parse(str);
