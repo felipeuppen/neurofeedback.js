@@ -1,13 +1,15 @@
 // neurofeedback.js
 
+// Initial configuration
 let eegBuffer = [];
 const FFT_SIZE = 256;
 let audioElement = document.getElementById("neurofeedbackAudio");
 audioElement.loop = true;
 let fadeInInterval, fadeOutInterval;
+let frequencyChart;
 let relaxedSeconds = 0, attentiveSeconds = 0, neutralSeconds = 0;
 
-let neurofeedbackProtocol = 'relaxation';
+var neurofeedbackProtocol = 'relaxation';
 
 function setRelaxationProtocol() {
     neurofeedbackProtocol = 'relaxation';
@@ -37,6 +39,11 @@ function processEEGData(uVrms) {
 }
 
 function updateNeurofeedback(frequencies) {
+    if (!frequencyChart) {
+        console.error("El gráfico de frecuencias no ha sido inicializado.");
+        return;
+    }
+
     const totalPower = frequencies.reduce((a, b) => a + b, 0);
     const deltaPower = sumPower(frequencies, 0.5, 4) / totalPower;
     const thetaPower = sumPower(frequencies, 4, 8) / totalPower;
@@ -75,20 +82,24 @@ function updateNeurofeedback(frequencies) {
         gammaPower * 100
     ];
 
-    updateFrequencyGraph(powerData);
+    frequencyChart.data.datasets[0].data = powerData;
+    frequencyChart.update();
 
     if ((deltaPower + thetaPower + alphaPower) > (betaPower + gammaPower)) {
         fadeInAudio();
         relaxedSeconds++;
         document.getElementById('relaxedTime').textContent = relaxedSeconds.toString();
+        bubble_fn_relaxedSeconds(relaxedSeconds);
     } else if ((betaPower + gammaPower) > (deltaPower + thetaPower + alphaPower)) {
         fadeInAudio();
         attentiveSeconds++;
         document.getElementById('attentiveTime').textContent = attentiveSeconds.toString();
+        bubble_fn_attentiveSeconds(attentiveSeconds);
     } else if ((alphaPower + thetaPower) > (deltaPower + betaPower + gammaPower)) {
         fadeInAudio();
         neutralSeconds++;
         document.getElementById('neutralTime').textContent = neutralSeconds.toString();
+        bubble_fn_neutralSeconds(neutralSeconds);
     } else {
         fadeOutAudio();
     }
@@ -122,3 +133,15 @@ function enableAudioFeedback() {
     console.log("Feedback de audio activado.");
     audioElement.play();
 }
+
+window.processEEGData = processEEGData;
+window.updateNeurofeedback = updateNeurofeedback;
+window.fadeInAudio = fadeInAudio;
+window.fadeOutAudio = fadeOutAudio;
+window.enableAudioFeedback = enableAudioFeedback;
+window.setRelaxationProtocol = setRelaxationProtocol;
+window.setAttentionProtocol = setAttentionProtocol;
+
+document.addEventListener('DOMContentLoaded', function() {
+    console.log("neurofeedback.js loaded and functions are defined.");
+});
