@@ -6,6 +6,7 @@ const FFT_SIZE = 256;
 let audioElement = document.getElementById("neurofeedbackAudio");
 audioElement.loop = true;
 let fadeInInterval, fadeOutInterval; // Intervalos para control de audio
+let frequencyChart; // Variable para manejar el gráfico de frecuencia
 let relaxedSeconds = 0, attentiveSeconds = 0, neutralSeconds = 0;
 
 var neurofeedbackProtocol = 'relaxation'; // Valor predeterminado
@@ -84,7 +85,8 @@ function updateNeurofeedback(frequencies) {
         gammaPower * 100
     ];
 
-    updateFrequencyGraph(deltaPower * 100, thetaPower * 100, alphaPower * 100, betaPower * 100, gammaPower * 100);
+    frequencyChart.data.datasets[0].data = powerData;
+    frequencyChart.update();
 
     // Condiciones para actualizar cada tipo de segundos basados en potencias de banda
     if ((deltaPower + thetaPower + alphaPower) > (betaPower + gammaPower)) {
@@ -136,35 +138,3 @@ function enableAudioFeedback() {
     console.log("Feedback de audio activado.");
     audioElement.play(); // Asegúrate de que el audio está listo para reproducirse
 }
-
-// Función para actualizar el gráfico de frecuencia
-function updateFrequencyGraph(delta, theta, alpha, beta, gamma) {
-    frequencyChart.data.datasets[0].data = [delta, theta, alpha, beta, gamma];
-    frequencyChart.update();
-}
-
-// Inicialización del gráfico de frecuencia
-const frequencyCtx = document.getElementById('frequencyGraph').getContext('2d');
-const frequencyChart = new Chart(frequencyCtx, {
-    type: 'bar',
-    data: {
-        labels: ['Delta', 'Theta', 'Alpha', 'Beta', 'Gamma'],
-        datasets: [{
-            label: 'Frecuencia',
-            backgroundColor: 'rgba(75, 192, 192, 0.2)',
-            borderColor: 'rgba(75, 192, 192, 1)',
-            data: [0, 0, 0, 0, 0]
-        }]
-    },
-    options: {
-        scales: {
-            x: {
-                beginAtZero: true
-            },
-            y: {
-                min: 0,
-                max: 100
-            }
-        }
-    }
-});
