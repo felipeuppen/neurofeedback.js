@@ -1,14 +1,15 @@
 // neurofeedback.js
 
-// Configuración inicial
+// Initial configuration
 let eegBuffer = [];
 const FFT_SIZE = 256;
 let audioElement = document.getElementById("neurofeedbackAudio");
 audioElement.loop = true;
-let fadeInInterval, fadeOutInterval; // Intervalos para control de audio
+let fadeInInterval, fadeOutInterval;
+let frequencyChart;
 let relaxedSeconds = 0, attentiveSeconds = 0, neutralSeconds = 0;
 
-var neurofeedbackProtocol = 'relaxation'; // Valor predeterminado
+var neurofeedbackProtocol = 'relaxation';
 
 function setRelaxationProtocol() {
     neurofeedbackProtocol = 'relaxation';
@@ -20,14 +21,12 @@ function setAttentionProtocol() {
     console.log('Protocolo de atención activado.');
 }
 
-// Función para calcular la potencia en un rango de frecuencias
 function sumPower(data, startFreq, endFreq) {
     const startIndex = Math.floor(startFreq / (256 / FFT_SIZE));
     const endIndex = Math.floor(endFreq / (256 / FFT_SIZE));
     return data.slice(startIndex, endIndex + 1).reduce((acc, val) => acc + val, 0);
 }
 
-// Función para procesar datos de EEG, realizar FFT y actualizar feedback
 function processEEGData(uVrms) {
     eegBuffer.push(uVrms);
     if (eegBuffer.length === FFT_SIZE) {
@@ -35,12 +34,16 @@ function processEEGData(uVrms) {
         fft.forward(eegBuffer);
         const frequencies = fft.spectrum;
         updateNeurofeedback(frequencies);
-        eegBuffer = []; // Reiniciar el buffer después de calcular FFT
+        eegBuffer = [];
     }
 }
 
-// Función de Neurofeedback basada en la potencia de las bandas de frecuencia
 function updateNeurofeedback(frequencies) {
+    if (!frequencyChart) {
+        console.error("El gráfico de frecuencias no ha sido inicializado.");
+        return;
+    }
+
     const totalPower = frequencies.reduce((a, b) => a + b, 0);
     const deltaPower = sumPower(frequencies, 0.5, 4) / totalPower;
     const thetaPower = sumPower(frequencies, 4, 8) / totalPower;
@@ -79,9 +82,9 @@ function updateNeurofeedback(frequencies) {
         gammaPower * 100
     ];
 
-    updateFrequencyGraph(deltaPower * 100, thetaPower * 100, alphaPower * 100, betaPower * 100, gammaPower * 100);
+    frequencyChart.data.datasets[0].data = powerData;
+    frequencyChart.update();
 
-    // Condiciones para actualizar cada tipo de segundos basados en potencias de banda
     if ((deltaPower + thetaPower + alphaPower) > (betaPower + gammaPower)) {
         fadeInAudio();
         relaxedSeconds++;
@@ -102,7 +105,6 @@ function updateNeurofeedback(frequencies) {
     }
 }
 
-// Funciones para manejar la reproducción y el volumen del audio
 function fadeInAudio() {
     clearInterval(fadeOutInterval);
     if (audioElement.volume < 1) {
@@ -129,5 +131,17 @@ function fadeOutAudio() {
 
 function enableAudioFeedback() {
     console.log("Feedback de audio activado.");
-    audioElement.play(); // Asegúrate de que el audio está listo para reproducirse
+    audioElement.play();
 }
+
+window.processEEGData = processEEGData;
+window.updateNeurofeedback = updateNeurofeedback;
+window.fadeInAudio = fadeInAudio;
+window.fadeOutAudio = fadeOutAudio;
+window.enableAudioFeedback = enableAudioFeedback;
+window.setRelaxationProtocol = setRelaxationProtocol;
+window.setAttentionProtocol = setAttentionProtocol;
+
+document.addEventListener('DOMContentLoaded', function() {
+    console.log("neurofeedback.js loaded and functions are defined.");
+});
