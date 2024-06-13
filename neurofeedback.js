@@ -6,7 +6,6 @@ const FFT_SIZE = 256;
 let audioElement = document.getElementById("neurofeedbackAudio");
 audioElement.loop = true;
 let fadeInInterval, fadeOutInterval; // Intervalos para control de audio
-let frequencyChart; // Variable para manejar el gráfico
 let relaxedSeconds = 0, attentiveSeconds = 0, neutralSeconds = 0;
 
 var neurofeedbackProtocol = 'relaxation'; // Valor predeterminado
@@ -42,11 +41,6 @@ function processEEGData(uVrms) {
 
 // Función de Neurofeedback basada en la potencia de las bandas de frecuencia
 function updateNeurofeedback(frequencies) {
-    if (!frequencyChart) {
-        console.error("El gráfico de frecuencias no ha sido inicializado.");
-        return; // No continuar si el gráfico no está disponible
-    }
-
     const totalPower = frequencies.reduce((a, b) => a + b, 0);
     const deltaPower = sumPower(frequencies, 0.5, 4) / totalPower;
     const thetaPower = sumPower(frequencies, 4, 8) / totalPower;
@@ -85,8 +79,7 @@ function updateNeurofeedback(frequencies) {
         gammaPower * 100
     ];
 
-    frequencyChart.data.datasets[0].data = powerData;
-    frequencyChart.update();
+    updateFrequencyGraph(deltaPower * 100, thetaPower * 100, alphaPower * 100, betaPower * 100, gammaPower * 100);
 
     // Condiciones para actualizar cada tipo de segundos basados en potencias de banda
     if ((deltaPower + thetaPower + alphaPower) > (betaPower + gammaPower)) {
@@ -137,32 +130,4 @@ function fadeOutAudio() {
 function enableAudioFeedback() {
     console.log("Feedback de audio activado.");
     audioElement.play(); // Asegúrate de que el audio está listo para reproducirse
-}
-
-// Inicialización del gráfico de frecuencia
-window.onload = function() {
-    const frequencyCtx = document.getElementById('frequencyGraph').getContext('2d');
-    frequencyChart = new Chart(frequencyCtx, {
-        type: 'bar',
-        data: {
-            labels: ['Delta', 'Theta', 'Alpha', 'Beta', 'Gamma'],
-            datasets: [{
-                label: 'Frecuencia',
-                backgroundColor: 'rgba(75, 192, 192, 0.2)',
-                borderColor: 'rgba(75, 192, 192, 1)',
-                data: [0, 0, 0, 0, 0]
-            }]
-        },
-        options: {
-            scales: {
-                x: {
-                    beginAtZero: true
-                },
-                y: {
-                    min: 0,
-                    max: 100
-                }
-            }
-        }
-    });
 }
