@@ -1,8 +1,30 @@
 // neurofeedback.js
 
-// Initial configuration
-let eegBuffer = [];
+class FFT {
+    constructor(size, sampleRate) {
+        this.size = size;
+        this.sampleRate = sampleRate;
+        this.real = new Array(size).fill(0);
+        this.imag = new Array(size).fill(0);
+    }
+
+    forward(buffer) {
+        // Implementa la transformada rápida de Fourier aquí
+        // Puedes usar una implementación existente de FFT si prefieres
+    }
+
+    get spectrum() {
+        // Calcula el espectro de frecuencias
+        const spectrum = new Array(this.size / 2);
+        for (let i = 0; i < this.size / 2; i++) {
+            spectrum[i] = Math.sqrt(this.real[i] ** 2 + this.imag[i] ** 2);
+        }
+        return spectrum;
+    }
+}
+
 const FFT_SIZE = 256;
+let eegBuffer = [];
 let audioElement = document.getElementById("neurofeedbackAudio");
 audioElement.loop = true;
 let fadeInInterval, fadeOutInterval;
@@ -21,18 +43,78 @@ function setAttentionProtocol() {
     console.log('Protocolo de atención activado.');
 }
 
+class MovingAverage {
+    constructor(size) {
+        this.size = size;
+        this.buffer = new Array(size).fill(0);
+    }
+
+    filter(value) {
+        this.buffer.shift();
+        this.buffer.push(value);
+        return this.buffer.reduce((acc, val) => acc + val, 0) / this.size;
+    }
+}
+
+class HighPassFilter {
+    constructor(sampleRate, cutoffFrequency) {
+        this.sampleRate = sampleRate;
+        this.cutoffFrequency = cutoffFrequency;
+        this.alpha = this.calculateAlpha(cutoffFrequency, sampleRate);
+        this.prevX = 0;
+        this.prevY = 0;
+    }
+
+    calculateAlpha(cutoffFrequency, sampleRate) {
+        const RC = 1.0 / (cutoffFrequency * 2 * Math.PI);
+        const dt = 1.0 / sampleRate;
+        return dt / (RC + dt);
+    }
+
+    filter(x) {
+        const y = this.alpha * (x - this.prevX) + (1 - this.alpha) * this.prevY;
+        this.prevX = x;
+        this.prevY = y;
+        return y;
+    }
+}
+
+class LowPassFilter {
+    constructor(sampleRate, cutoffFrequency) {
+        this.sampleRate = sampleRate;
+        this.cutoffFrequency = cutoffFrequency;
+        this.alpha = this.calculateAlpha(cutoffFrequency, sampleRate);
+        this.prevY = 0;
+    }
+
+    calculateAlpha(cutoffFrequency, sampleRate) {
+        const RC = 1.0 / (cutoffFrequency * 2 * Math.PI);
+        const dt = 1.0 / sampleRate;
+        return dt / (RC + dt);
+    }
+
+    filter(x) {
+        const y = (1 - this.alpha) * x + this.alpha * this.prevY;
+        this.prevY = y;
+        return y;
+    }
+}
+
 function sumPower(data, startFreq, endFreq) {
     const startIndex = Math.floor(startFreq / (256 / FFT_SIZE));
     const endIndex = Math.floor(endFreq / (256 / FFT_SIZE));
+    console.log(`Sumando potencia para frecuencias entre ${startFreq} y ${endFreq}, índices ${startIndex} a ${endIndex}`);
     return data.slice(startIndex, endIndex + 1).reduce((acc, val) => acc + val, 0);
 }
 
 function processEEGData(uVrms) {
     eegBuffer.push(uVrms);
     if (eegBuffer.length === FFT_SIZE) {
+        console.log("Buffer lleno, calculando FFT...");
         const fft = new FFT(FFT_SIZE, 256);
         fft.forward(eegBuffer);
         const frequencies = fft.spectrum;
+        console.log("Frequencies calculated:", frequencies);
         updateNeurofeedback(frequencies);
         eegBuffer = [];
     }
@@ -81,6 +163,8 @@ function updateNeurofeedback(frequencies) {
         betaPower * 100,
         gammaPower * 100
     ];
+
+    console.log("Power Data:", powerData);
 
     frequencyChart.data.datasets[0].data = powerData;
     frequencyChart.update();
@@ -142,6 +226,6 @@ window.enableAudioFeedback = enableAudioFeedback;
 window.setRelaxationProtocol = setRelaxationProtocol;
 window.setAttentionProtocol = setAttentionProtocol;
 
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     console.log("neurofeedback.js loaded and functions are defined.");
 });
