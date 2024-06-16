@@ -147,18 +147,27 @@ function sumPower(data, startFreq, endFreq) {
     return data.slice(startIndex, endIndex + 1).reduce((acc, val) => acc + val, 0);
 }
 
-function processEEGData(uVrms) {
+window.processEEGData = function (uVrms) {
+    console.log("processEEGData called with:", uVrms);
     eegBuffer.push(uVrms);
+    console.log("eegBuffer length:", eegBuffer.length);
     if (eegBuffer.length === FFT_SIZE) {
         console.log("Buffer lleno, calculando FFT...");
         const fft = new FFT(FFT_SIZE, 256);
         fft.forward(eegBuffer);
         const frequencies = fft.spectrum;
         console.log("Frequencies calculated:", frequencies);
-        updateNeurofeedback(frequencies);
+
+        // Asegurarse de que las frecuencias no estén vacías
+        if (frequencies && frequencies.length > 0) {
+            updateNeurofeedback(frequencies);
+        } else {
+            console.error("FFT calculation returned an empty spectrum.");
+        }
+
         eegBuffer = [];
     }
-}
+};
 
 function updateNeurofeedback(frequencies) {
     if (!frequencyChart) {
