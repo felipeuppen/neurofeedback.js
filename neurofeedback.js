@@ -278,3 +278,4 @@ window.setAttentionProtocol = setAttentionProtocol;
 document.addEventListener('DOMContentLoaded', function () {
     console.log("neurofeedback.js loaded and functions are defined.");
 });
+
