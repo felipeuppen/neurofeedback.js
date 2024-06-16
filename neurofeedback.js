@@ -1,3 +1,5 @@
+// neurofeedback.js
+
 class FFT {
     constructor(size, sampleRate) {
         this.size = size;
@@ -273,6 +275,6 @@ window.enableAudioFeedback = enableAudioFeedback;
 window.setRelaxationProtocol = setRelaxationProtocol;
 window.setAttentionProtocol = setAttentionProtocol;
 
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     console.log("neurofeedback.js loaded and functions are defined.");
 });
