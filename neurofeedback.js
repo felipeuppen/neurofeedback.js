@@ -1,5 +1,3 @@
-// neurofeedback.js
-
 class FFT {
     constructor(size, sampleRate) {
         this.size = size;
@@ -147,7 +145,7 @@ function sumPower(data, startFreq, endFreq) {
     return data.slice(startIndex, endIndex + 1).reduce((acc, val) => acc + val, 0);
 }
 
-window.processEEGData = function (uVrms) {
+window.processEEGData = function(uVrms) {
     console.log("processEEGData called with:", uVrms);
     eegBuffer.push(uVrms);
     console.log("eegBuffer length:", eegBuffer.length);
@@ -275,7 +273,6 @@ window.enableAudioFeedback = enableAudioFeedback;
 window.setRelaxationProtocol = setRelaxationProtocol;
 window.setAttentionProtocol = setAttentionProtocol;
 
-document.addEventListener('DOMContentLoaded', function () {
+document.addEventListener('DOMContentLoaded', function() {
     console.log("neurofeedback.js loaded and functions are defined.");
 });
-
