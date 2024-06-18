@@ -1,62 +1,57 @@
 // neurofeedback.js
 
+// Assuming FFT class and necessary methods from the library
 class FFT {
     constructor(size) {
         this.size = size;
-        this.table = new Float32Array(size);
-        this.reverseTable = new Uint32Array(size);
-        this.im = new Float32Array(size);
         this.re = new Float32Array(size);
-
-        for (let i = 0; i < size; i++) {
-            this.reverseTable[i] = this.reverseBits(i, Math.log2(size));
-        }
-
-        for (let i = 0; i < size / 2; i++) {
-            this.table[i] = -2 * Math.PI * i / size;
-        }
+        this.im = new Float32Array(size);
     }
 
-    reverseBits(x, bits) {
-        let y = 0;
-        for (let i = 0; i < bits; i++) {
-            y = (y << 1) | (x & 1);
-            x >>= 1;
-        }
-        return y;
-    }
-
-    transform(re, im) {
+    forward(re, im) {
         const size = this.size;
-        const table = this.table;
-        const reverseTable = this.reverseTable;
-
         for (let i = 0; i < size; i++) {
-            this.re[reverseTable[i]] = re[i];
-            this.im[reverseTable[i]] = im[i];
+            this.re[i] = re[i];
+            this.im[i] = im[i];
         }
 
-        for (let halfSize = 1; halfSize < size; halfSize <<= 1) {
-            const phaseShiftStepReal = Math.cos(table[halfSize]);
-            const phaseShiftStepImag = Math.sin(table[halfSize]);
+        const N = this.size;
+        const halfN = N / 2;
+        let real, imag, tpreal, tpimag, costp, sintp;
+        let cos = Math.cos, sin = Math.sin, PI = Math.PI;
 
-            for (let fftStep = 0; fftStep < size; fftStep += 2 * halfSize) {
-                let currentPhaseShiftReal = 1.0;
-                let currentPhaseShiftImag = 0.0;
+        for (let i = 0; i < N; i++) {
+            let j = 0;
+            for (let bit = 0; bit < Math.log2(N); bit++) {
+                j = (j << 1) | (1 & (i >> bit));
+            }
+            if (j > i) {
+                [this.re[i], this.re[j]] = [this.re[j], this.re[i]];
+                [this.im[i], this.im[j]] = [this.im[j], this.im[i]];
+            }
+        }
 
-                for (let fftStep2 = 0; fftStep2 < halfSize; fftStep2++) {
-                    const off = fftStep + fftStep2;
-                    const tr = currentPhaseShiftReal * this.re[off + halfSize] - currentPhaseShiftImag * this.im[off + halfSize];
-                    const ti = currentPhaseShiftReal * this.im[off + halfSize] + currentPhaseShiftImag * this.re[off + halfSize];
+        for (let i = 1; i < N; i <<= 1) {
+            costp = cos(PI / i);
+            sintp = sin(PI / i);
 
-                    this.re[off + halfSize] = this.re[off] - tr;
-                    this.im[off + halfSize] = this.im[off] - ti;
-                    this.re[off] += tr;
-                    this.im[off] += ti;
+            for (let j = 0; j < N; j += (i << 1)) {
+                real = 1;
+                imag = 0;
 
-                    const tmpReal = currentPhaseShiftReal;
-                    currentPhaseShiftReal = tmpReal * phaseShiftStepReal - currentPhaseShiftImag * phaseShiftStepImag;
-                    currentPhaseShiftImag = tmpReal * phaseShiftStepImag + currentPhaseShiftImag * phaseShiftStepReal;
+                for (let k = 0; k < i; k++) {
+                    tpreal = real * this.re[j + k + i] - imag * this.im[j + k + i];
+                    tpimag = real * this.im[j + k + i] + imag * this.re[j + k + i];
+
+                    this.re[j + k + i] = this.re[j + k] - tpreal;
+                    this.im[j + k + i] = this.im[j + k] - tpimag;
+
+                    this.re[j + k] += tpreal;
+                    this.im[j + k] += tpimag;
+
+                    tpreal = real * costp - imag * sintp;
+                    imag = real * sintp + imag * costp;
+                    real = tpreal;
                 }
             }
         }
@@ -74,17 +69,24 @@ class FFT {
     toComplexArray(input) {
         const complexArray = new Float32Array(this.size * 2);
         for (let i = 0; i < input.length; i++) {
-            complexArray[2 * i] = input[i];
-            complexArray[2 * i + 1] = 0;
+            complexArray[i * 2] = input[i];
+            complexArray[i * 2 + 1] = 0;
         }
         return complexArray;
     }
 
-    completeSpectrum(complexArray) {
-        const size = this.size;
-        for (let i = 0; i < size / 2; i++) {
-            complexArray[2 * (size - i - 1)] = complexArray[2 * i];
-            complexArray[2 * (size - i - 1) + 1] = -complexArray[2 * i + 1];
+    realTransform(output, input) {
+        this.forward(input, new Float32Array(this.size));
+        for (let i = 0; i < this.size / 2; i++) {
+            output[2 * i] = this.re[i];
+            output[2 * i + 1] = this.im[i];
+        }
+    }
+
+    completeSpectrum(output) {
+        for (let i = this.size / 2; i < this.size; i++) {
+            output[2 * i] = this.re[this.size - i];
+            output[2 * i + 1] = -this.im[this.size - i];
         }
     }
 }
@@ -182,7 +184,7 @@ window.processEEGData = function (uVrms) {
         const fft = new FFT(FFT_SIZE);
         const out = fft.createComplexArray();
         const data = fft.toComplexArray(eegBuffer);
-        fft.transform(out, data);
+        fft.realTransform(out, data);
         fft.completeSpectrum(out);
         const frequencies = out.slice(0, FFT_SIZE / 2).map((v, i) => Math.sqrt(out[2 * i] ** 2 + out[2 * i + 1] ** 2));
         console.log("Frequencies calculated:", frequencies);
