@@ -1,5 +1,19 @@
 // neurofeedback.js
 
+class FFT {
+    constructor(size) {
+        this.size = size;
+        this._fft = new fft.FFT(size);
+    }
+
+    forward(buffer) {
+        const complexArray = this._fft.createComplexArray();
+        this._fft.realTransform(complexArray, buffer);
+        this._fft.completeSpectrum(complexArray);
+        return this._fft.fromComplexArray(complexArray);
+    }
+}
+
 const FFT_SIZE = 64;
 let eegBuffer = [];
 let audioElement = document.getElementById("neurofeedbackAudio");
@@ -91,15 +105,7 @@ window.processEEGData = function (uVrms) {
     if (eegBuffer.length >= FFT_SIZE) {
         console.log("Buffer lleno, calculando FFT...");
         const fft = new FFT(FFT_SIZE);
-        const phasors = fft.createComplexArray();
-        fft.realTransform(phasors, eegBuffer);
-        fft.completeSpectrum(phasors);
-
-        const frequencies = new Array(FFT_SIZE / 2);
-        for (let i = 0; i < FFT_SIZE / 2; i++) {
-            frequencies[i] = Math.sqrt(phasors[2 * i] ** 2 + phasors[2 * i + 1] ** 2);
-        }
-
+        const frequencies = fft.forward(eegBuffer);
         console.log("Frequencies calculated:", frequencies);
 
         // Asegurarse de que las frecuencias no estén vacías
