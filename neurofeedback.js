@@ -1,3 +1,5 @@
+// neurofeedback.js
+
 class FFT {
     constructor(size, sampleRate) {
         this.size = size;
@@ -61,12 +63,12 @@ class FFT {
     }
 }
 
-const FFT_SIZE = 64; // Tamaño de la ventana FFT
-const SAMPLE_RATE = 256; // Tasa de muestreo del EEG
+const FFT_SIZE = 64;
 let eegBuffer = [];
 let audioElement = document.getElementById("neurofeedbackAudio");
 audioElement.loop = true;
 let fadeInInterval, fadeOutInterval;
+let frequencyChart;
 let relaxedSeconds = 0, attentiveSeconds = 0, neutralSeconds = 0;
 
 var neurofeedbackProtocol = 'relaxation';
@@ -139,8 +141,8 @@ class LowPassFilter {
 }
 
 function sumPower(data, startFreq, endFreq) {
-    const startIndex = Math.floor(startFreq / (SAMPLE_RATE / FFT_SIZE));
-    const endIndex = Math.floor(endFreq / (SAMPLE_RATE / FFT_SIZE));
+    const startIndex = Math.floor(startFreq / (256 / FFT_SIZE));
+    const endIndex = Math.floor(endFreq / (256 / FFT_SIZE));
     console.log(`Sumando potencia para frecuencias entre ${startFreq} y ${endFreq}, índices ${startIndex} a ${endIndex}`);
     return data.slice(startIndex, endIndex + 1).reduce((acc, val) => acc + val, 0);
 }
@@ -151,7 +153,7 @@ window.processEEGData = function (uVrms) {
     console.log("eegBuffer length:", eegBuffer.length);
     if (eegBuffer.length >= FFT_SIZE) {
         console.log("Buffer lleno, calculando FFT...");
-        const fft = new FFT(FFT_SIZE, SAMPLE_RATE);
+        const fft = new FFT(FFT_SIZE, 256);
         fft.forward(eegBuffer);
         const frequencies = fft.spectrum;
         console.log("Frequencies calculated:", frequencies);
@@ -168,6 +170,11 @@ window.processEEGData = function (uVrms) {
 };
 
 function updateNeurofeedback(frequencies) {
+    if (!frequencyChart) {
+        console.error("El gráfico de frecuencias no ha sido inicializado.");
+        return;
+    }
+
     const totalPower = frequencies.reduce((a, b) => a + b, 0);
     const deltaPower = sumPower(frequencies, 0.5, 4) / totalPower;
     const thetaPower = sumPower(frequencies, 4, 8) / totalPower;
@@ -208,11 +215,27 @@ function updateNeurofeedback(frequencies) {
 
     console.log("Power Data:", powerData);
 
-    document.getElementById('deltaPower').textContent = `Delta: ${(deltaPower * 100).toFixed(2)}%`;
-    document.getElementById('thetaPower').textContent = `Theta: ${(thetaPower * 100).toFixed(2)}%`;
-    document.getElementById('alphaPower').textContent = `Alpha: ${(alphaPower * 100).toFixed(2)}%`;
-    document.getElementById('betaPower').textContent = `Beta: ${(betaPower * 100).toFixed(2)}%`;
-    document.getElementById('gammaPower').textContent = `Gamma: ${(gammaPower * 100).toFixed(2)}%`;
+    frequencyChart.data.datasets[0].data = powerData;
+    frequencyChart.update();
+
+    if ((deltaPower + thetaPower + alphaPower) > (betaPower + gammaPower)) {
+        fadeInAudio();
+        relaxedSeconds++;
+        document.getElementById('relaxedTime').textContent = relaxedSeconds.toString();
+        bubble_fn_relaxedSeconds(relaxedSeconds);
+    } else if ((betaPower + gammaPower) > (deltaPower + thetaPower + alphaPower)) {
+        fadeInAudio();
+        attentiveSeconds++;
+        document.getElementById('attentiveTime').textContent = attentiveSeconds.toString();
+        bubble_fn_attentiveSeconds(attentiveSeconds);
+    } else if ((alphaPower + thetaPower) > (deltaPower + betaPower + gammaPower)) {
+        fadeInAudio();
+        neutralSeconds++;
+        document.getElementById('neutralTime').textContent = neutralSeconds.toString();
+        bubble_fn_neutralSeconds(neutralSeconds);
+    } else {
+        fadeOutAudio();
+    }
 }
 
 function fadeInAudio() {
