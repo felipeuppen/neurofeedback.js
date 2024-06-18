@@ -61,7 +61,8 @@ class FFT {
     }
 }
 
-const FFT_SIZE = 32; // Reduce el tamaño de la ventana
+const FFT_SIZE = 64; // Tamaño de la ventana FFT
+const SAMPLE_RATE = 256; // Tasa de muestreo del EEG
 let eegBuffer = [];
 let audioElement = document.getElementById("neurofeedbackAudio");
 audioElement.loop = true;
@@ -138,8 +139,8 @@ class LowPassFilter {
 }
 
 function sumPower(data, startFreq, endFreq) {
-    const startIndex = Math.floor(startFreq / (256 / FFT_SIZE));
-    const endIndex = Math.floor(endFreq / (256 / FFT_SIZE));
+    const startIndex = Math.floor(startFreq / (SAMPLE_RATE / FFT_SIZE));
+    const endIndex = Math.floor(endFreq / (SAMPLE_RATE / FFT_SIZE));
     console.log(`Sumando potencia para frecuencias entre ${startFreq} y ${endFreq}, índices ${startIndex} a ${endIndex}`);
     return data.slice(startIndex, endIndex + 1).reduce((acc, val) => acc + val, 0);
 }
@@ -150,7 +151,7 @@ window.processEEGData = function (uVrms) {
     console.log("eegBuffer length:", eegBuffer.length);
     if (eegBuffer.length >= FFT_SIZE) {
         console.log("Buffer lleno, calculando FFT...");
-        const fft = new FFT(FFT_SIZE, 256);
+        const fft = new FFT(FFT_SIZE, SAMPLE_RATE);
         fft.forward(eegBuffer);
         const frequencies = fft.spectrum;
         console.log("Frequencies calculated:", frequencies);
