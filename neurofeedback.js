@@ -3,14 +3,89 @@
 class FFT {
     constructor(size) {
         this.size = size;
-        this._fft = new fft.FFT(size);
+        this.table = new Float32Array(size);
+        this.reverseTable = new Uint32Array(size);
+        this.im = new Float32Array(size);
+        this.re = new Float32Array(size);
+
+        for (let i = 0; i < size; i++) {
+            this.reverseTable[i] = this.reverseBits(i, Math.log2(size));
+        }
+
+        for (let i = 0; i < size / 2; i++) {
+            this.table[i] = -2 * Math.PI * i / size;
+        }
     }
 
-    forward(buffer) {
-        const complexArray = this._fft.createComplexArray();
-        this._fft.realTransform(complexArray, buffer);
-        this._fft.completeSpectrum(complexArray);
-        return this._fft.fromComplexArray(complexArray);
+    reverseBits(x, bits) {
+        let y = 0;
+        for (let i = 0; i < bits; i++) {
+            y = (y << 1) | (x & 1);
+            x >>= 1;
+        }
+        return y;
+    }
+
+    transform(re, im) {
+        const size = this.size;
+        const table = this.table;
+        const reverseTable = this.reverseTable;
+
+        for (let i = 0; i < size; i++) {
+            this.re[reverseTable[i]] = re[i];
+            this.im[reverseTable[i]] = im[i];
+        }
+
+        for (let halfSize = 1; halfSize < size; halfSize <<= 1) {
+            const phaseShiftStepReal = Math.cos(table[halfSize]);
+            const phaseShiftStepImag = Math.sin(table[halfSize]);
+
+            for (let fftStep = 0; fftStep < size; fftStep += 2 * halfSize) {
+                let currentPhaseShiftReal = 1.0;
+                let currentPhaseShiftImag = 0.0;
+
+                for (let fftStep2 = 0; fftStep2 < halfSize; fftStep2++) {
+                    const off = fftStep + fftStep2;
+                    const tr = currentPhaseShiftReal * this.re[off + halfSize] - currentPhaseShiftImag * this.im[off + halfSize];
+                    const ti = currentPhaseShiftReal * this.im[off + halfSize] + currentPhaseShiftImag * this.re[off + halfSize];
+
+                    this.re[off + halfSize] = this.re[off] - tr;
+                    this.im[off + halfSize] = this.im[off] - ti;
+                    this.re[off] += tr;
+                    this.im[off] += ti;
+
+                    const tmpReal = currentPhaseShiftReal;
+                    currentPhaseShiftReal = tmpReal * phaseShiftStepReal - currentPhaseShiftImag * phaseShiftStepImag;
+                    currentPhaseShiftImag = tmpReal * phaseShiftStepImag + currentPhaseShiftImag * phaseShiftStepReal;
+                }
+            }
+        }
+
+        for (let i = 0; i < size; i++) {
+            re[i] = this.re[i];
+            im[i] = this.im[i];
+        }
+    }
+
+    createComplexArray() {
+        return new Float32Array(this.size * 2);
+    }
+
+    toComplexArray(input) {
+        const complexArray = new Float32Array(this.size * 2);
+        for (let i = 0; i < input.length; i++) {
+            complexArray[2 * i] = input[i];
+            complexArray[2 * i + 1] = 0;
+        }
+        return complexArray;
+    }
+
+    completeSpectrum(complexArray) {
+        const size = this.size;
+        for (let i = 0; i < size / 2; i++) {
+            complexArray[2 * (size - i - 1)] = complexArray[2 * i];
+            complexArray[2 * (size - i - 1) + 1] = -complexArray[2 * i + 1];
+        }
     }
 }
 
@@ -105,16 +180,13 @@ window.processEEGData = function (uVrms) {
     if (eegBuffer.length >= FFT_SIZE) {
         console.log("Buffer lleno, calculando FFT...");
         const fft = new FFT(FFT_SIZE);
-        const frequencies = fft.forward(eegBuffer);
+        const out = fft.createComplexArray();
+        const data = fft.toComplexArray(eegBuffer);
+        fft.transform(out, data);
+        fft.completeSpectrum(out);
+        const frequencies = out.slice(0, FFT_SIZE / 2).map((v, i) => Math.sqrt(out[2 * i] ** 2 + out[2 * i + 1] ** 2));
         console.log("Frequencies calculated:", frequencies);
-
-        // Asegurarse de que las frecuencias no estén vacías
-        if (frequencies && frequencies.length > 0) {
-            updateNeurofeedback(frequencies);
-        } else {
-            console.error("FFT calculation returned an empty spectrum.");
-        }
-
+        updateNeurofeedback(frequencies);
         eegBuffer = eegBuffer.slice(-FFT_SIZE / 2); // Desplazar la ventana a la mitad para una actualización continua
     }
 };
