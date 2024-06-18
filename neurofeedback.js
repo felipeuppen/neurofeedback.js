@@ -1,3 +1,5 @@
+// neurofeedback.js
+
 class FFT {
     constructor(size, sampleRate) {
         this.size = size;
@@ -61,10 +63,8 @@ class FFT {
     }
 }
 
-const FFT_SIZE = 128;
+const FFT_SIZE = 64;
 let eegBuffer = [];
-let frequencyBuffer = [];
-const FREQUENCY_BUFFER_SIZE = 25; // Adjust based on how many updates you want to keep
 let audioElement = document.getElementById("neurofeedbackAudio");
 audioElement.loop = true;
 let fadeInInterval, fadeOutInterval;
@@ -160,10 +160,6 @@ window.processEEGData = function (uVrms) {
 
         // Asegurarse de que las frecuencias no estén vacías
         if (frequencies && frequencies.length > 0) {
-            frequencyBuffer.push(frequencies);
-            if (frequencyBuffer.length > FREQUENCY_BUFFER_SIZE) {
-                frequencyBuffer.shift();
-            }
             updateNeurofeedback(frequencies);
         } else {
             console.error("FFT calculation returned an empty spectrum.");
