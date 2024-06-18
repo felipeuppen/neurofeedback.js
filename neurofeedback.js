@@ -151,7 +151,7 @@ window.processEEGData = function (uVrms) {
     console.log("processEEGData called with:", uVrms);
     eegBuffer.push(uVrms);
     console.log("eegBuffer length:", eegBuffer.length);
-    if (eegBuffer.length === FFT_SIZE) {
+    if (eegBuffer.length >= FFT_SIZE) {
         console.log("Buffer lleno, calculando FFT...");
         const fft = new FFT(FFT_SIZE, 256);
         fft.forward(eegBuffer);
@@ -165,7 +165,7 @@ window.processEEGData = function (uVrms) {
             console.error("FFT calculation returned an empty spectrum.");
         }
 
-        eegBuffer = [];
+        eegBuffer = eegBuffer.slice(-FFT_SIZE / 2); // Desplazar la ventana a la mitad para una actualización continua
     }
 };
 
