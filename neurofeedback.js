@@ -1,5 +1,3 @@
-// neurofeedback.js
-
 class FFT {
     constructor(size, sampleRate) {
         this.size = size;
@@ -63,12 +61,11 @@ class FFT {
     }
 }
 
-const FFT_SIZE = 64;
+const FFT_SIZE = 32; // Reduce el tamaño de la ventana
 let eegBuffer = [];
 let audioElement = document.getElementById("neurofeedbackAudio");
 audioElement.loop = true;
 let fadeInInterval, fadeOutInterval;
-let frequencyChart;
 let relaxedSeconds = 0, attentiveSeconds = 0, neutralSeconds = 0;
 
 var neurofeedbackProtocol = 'relaxation';
@@ -170,11 +167,6 @@ window.processEEGData = function (uVrms) {
 };
 
 function updateNeurofeedback(frequencies) {
-    if (!frequencyChart) {
-        console.error("El gráfico de frecuencias no ha sido inicializado.");
-        return;
-    }
-
     const totalPower = frequencies.reduce((a, b) => a + b, 0);
     const deltaPower = sumPower(frequencies, 0.5, 4) / totalPower;
     const thetaPower = sumPower(frequencies, 4, 8) / totalPower;
@@ -215,27 +207,11 @@ function updateNeurofeedback(frequencies) {
 
     console.log("Power Data:", powerData);
 
-    frequencyChart.data.datasets[0].data = powerData;
-    frequencyChart.update();
-
-    if ((deltaPower + thetaPower + alphaPower) > (betaPower + gammaPower)) {
-        fadeInAudio();
-        relaxedSeconds++;
-        document.getElementById('relaxedTime').textContent = relaxedSeconds.toString();
-        bubble_fn_relaxedSeconds(relaxedSeconds);
-    } else if ((betaPower + gammaPower) > (deltaPower + thetaPower + alphaPower)) {
-        fadeInAudio();
-        attentiveSeconds++;
-        document.getElementById('attentiveTime').textContent = attentiveSeconds.toString();
-        bubble_fn_attentiveSeconds(attentiveSeconds);
-    } else if ((alphaPower + thetaPower) > (deltaPower + betaPower + gammaPower)) {
-        fadeInAudio();
-        neutralSeconds++;
-        document.getElementById('neutralTime').textContent = neutralSeconds.toString();
-        bubble_fn_neutralSeconds(neutralSeconds);
-    } else {
-        fadeOutAudio();
-    }
+    document.getElementById('deltaPower').textContent = `Delta: ${(deltaPower * 100).toFixed(2)}%`;
+    document.getElementById('thetaPower').textContent = `Theta: ${(thetaPower * 100).toFixed(2)}%`;
+    document.getElementById('alphaPower').textContent = `Alpha: ${(alphaPower * 100).toFixed(2)}%`;
+    document.getElementById('betaPower').textContent = `Beta: ${(betaPower * 100).toFixed(2)}%`;
+    document.getElementById('gammaPower').textContent = `Gamma: ${(gammaPower * 100).toFixed(2)}%`;
 }
 
 function fadeInAudio() {
