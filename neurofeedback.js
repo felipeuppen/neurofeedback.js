@@ -1,19 +1,16 @@
 // neurofeedback.js
 
-// Assuming FFT class and necessary methods from the library
 class FFT {
-    constructor(size) {
+    constructor(size, sampleRate) {
         this.size = size;
-        this.re = new Float32Array(size);
-        this.im = new Float32Array(size);
+        this.sampleRate = sampleRate;
+        this.real = new Array(size).fill(0);
+        this.imag = new Array(size).fill(0);
     }
 
-    forward(re, im) {
-        const size = this.size;
-        for (let i = 0; i < size; i++) {
-            this.re[i] = re[i];
-            this.im[i] = im[i];
-        }
+    forward(buffer) {
+        this.real = buffer.slice();
+        this.imag.fill(0);
 
         const N = this.size;
         const halfN = N / 2;
@@ -26,8 +23,8 @@ class FFT {
                 j = (j << 1) | (1 & (i >> bit));
             }
             if (j > i) {
-                [this.re[i], this.re[j]] = [this.re[j], this.re[i]];
-                [this.im[i], this.im[j]] = [this.im[j], this.im[i]];
+                [this.real[i], this.real[j]] = [this.real[j], this.real[i]];
+                [this.imag[i], this.imag[j]] = [this.imag[j], this.imag[i]];
             }
         }
 
@@ -40,14 +37,14 @@ class FFT {
                 imag = 0;
 
                 for (let k = 0; k < i; k++) {
-                    tpreal = real * this.re[j + k + i] - imag * this.im[j + k + i];
-                    tpimag = real * this.im[j + k + i] + imag * this.re[j + k + i];
+                    tpreal = real * this.real[j + k + i] - imag * this.imag[j + k + i];
+                    tpimag = real * this.imag[j + k + i] + imag * this.real[j + k + i];
 
-                    this.re[j + k + i] = this.re[j + k] - tpreal;
-                    this.im[j + k + i] = this.im[j + k] - tpimag;
+                    this.real[j + k + i] = this.real[j + k] - tpreal;
+                    this.imag[j + k + i] = this.imag[j + k] - tpimag;
 
-                    this.re[j + k] += tpreal;
-                    this.im[j + k] += tpimag;
+                    this.real[j + k] += tpreal;
+                    this.imag[j + k] += tpimag;
 
                     tpreal = real * costp - imag * sintp;
                     imag = real * sintp + imag * costp;
@@ -55,39 +52,14 @@ class FFT {
                 }
             }
         }
-
-        for (let i = 0; i < size; i++) {
-            re[i] = this.re[i];
-            im[i] = this.im[i];
-        }
     }
 
-    createComplexArray() {
-        return new Float32Array(this.size * 2);
-    }
-
-    toComplexArray(input) {
-        const complexArray = new Float32Array(this.size * 2);
-        for (let i = 0; i < input.length; i++) {
-            complexArray[i * 2] = input[i];
-            complexArray[i * 2 + 1] = 0;
-        }
-        return complexArray;
-    }
-
-    realTransform(output, input) {
-        this.forward(input, new Float32Array(this.size));
+    get spectrum() {
+        const spectrum = new Array(this.size / 2);
         for (let i = 0; i < this.size / 2; i++) {
-            output[2 * i] = this.re[i];
-            output[2 * i + 1] = this.im[i];
+            spectrum[i] = Math.sqrt(this.real[i] ** 2 + this.imag[i] ** 2);
         }
-    }
-
-    completeSpectrum(output) {
-        for (let i = this.size / 2; i < this.size; i++) {
-            output[2 * i] = this.re[this.size - i];
-            output[2 * i + 1] = -this.im[this.size - i];
-        }
+        return spectrum;
     }
 }
 
@@ -181,14 +153,17 @@ window.processEEGData = function (uVrms) {
     console.log("eegBuffer length:", eegBuffer.length);
     if (eegBuffer.length >= FFT_SIZE) {
         console.log("Buffer lleno, calculando FFT...");
-        const fft = new FFT(FFT_SIZE);
-        const out = fft.createComplexArray();
-        const data = fft.toComplexArray(eegBuffer);
-        fft.realTransform(out, data);
-        fft.completeSpectrum(out);
-        const frequencies = out.slice(0, FFT_SIZE / 2).map((v, i) => Math.sqrt(out[2 * i] ** 2 + out[2 * i + 1] ** 2));
+        const fft = new FFT(FFT_SIZE, 256);
+        fft.forward(eegBuffer);
+        const frequencies = fft.spectrum;
         console.log("Frequencies calculated:", frequencies);
-        updateNeurofeedback(frequencies);
+        // Asegurarse de que las frecuencias no estén vacías
+        if (frequencies && frequencies.length > 0) {
+            updateNeurofeedback(frequencies);
+        } else {
+            console.error("FFT calculation returned an empty spectrum.");
+        }
+
         eegBuffer = eegBuffer.slice(-FFT_SIZE / 2); // Desplazar la ventana a la mitad para una actualización continua
     }
 };
@@ -198,7 +173,6 @@ function updateNeurofeedback(frequencies) {
         console.error("El gráfico de frecuencias no ha sido inicializado.");
         return;
     }
-
     const totalPower = frequencies.reduce((a, b) => a + b, 0);
     const deltaPower = sumPower(frequencies, 0.5, 4) / totalPower;
     const thetaPower = sumPower(frequencies, 4, 8) / totalPower;
@@ -229,13 +203,7 @@ function updateNeurofeedback(frequencies) {
             break;
     }
 
-    const powerData = [
-        deltaPower * 100,
-        thetaPower * 100,
-        alphaPower * 100,
-        betaPower * 100,
-        gammaPower * 100
-    ];
+    const powerData = [deltaPower * 100, thetaPower * 100, alphaPower * 100, betaPower * 100, gammaPower * 100];
 
     console.log("Power Data:", powerData);
 
