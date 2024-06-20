@@ -4,13 +4,15 @@
     <meta charset="UTF-8">
     <title>Conectar Muse</title>
     <script defer src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script defer src="https://raw.githubusercontent.com/felipeuppen/neurofeedback/main/neurofeedback.js"></script>
     <script defer src="https://c86405ffad19a6265b95230b2818f733.cdn.bubble.io/f1712687056037x412629362840832640/Muse.js"></script>
     <script defer>
         console.log("main.js has been loaded.");
         
         const FFT_SIZE = 64; // Asegúrate de que FFT_SIZE está definido
         let eegBuffer = [];
+        
+        // Definir audioElement globalmente
+        let audioElement;
 
         class FFT {
             constructor(size, sampleRate) {
@@ -294,12 +296,21 @@
             }
         };
 
+        function enableAudioFeedback() {
+            console.log("Feedback de audio activado.");
+            audioElement.play();
+        }
+
+        window.enableAudioFeedback = enableAudioFeedback;
+
         console.log("All functions have been registered globally.");
 
         window.onload = function() {
             console.log("Window loaded. Checking if functions are defined...");
             console.log("connectAndReadData:", typeof connectAndReadData);
             console.log("disconnect:", typeof disconnect);
+
+            audioElement = document.getElementById('neurofeedbackAudio');
 
             document.getElementById('connect').addEventListener('click', function() {
                 if (typeof connectAndReadData === 'function') {
@@ -329,7 +340,7 @@ const voltageChart = new Chart(ctx, {
         datasets: [{
             label: 'Voltaje',
             backgroundColor: 'rgba(131, 89, 121, 0.2)',
-            borderColor: '#4666FF',
+            borderColor: '#835979',
             data: dataPoints,
             spanGaps: true,
             pointRadius: 0
