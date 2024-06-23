@@ -137,7 +137,6 @@ class LowPassFilter {
 function sumPower(data, startFreq, endFreq) {
     const startIndex = Math.floor(startFreq / (256 / FFT_SIZE));
     const endIndex = Math.floor(endFreq / (256 / FFT_SIZE));
-    console.log(`Sumando potencia para frecuencias entre ${startFreq} y ${endFreq}, índices ${startIndex} a ${endIndex}`);
     return data.slice(startIndex, endIndex + 1).reduce((acc, val) => acc + val, 0);
 }
 
@@ -147,17 +146,13 @@ function updateNeurofeedback(frequencies) {
         return;
     }
     const totalPower = frequencies.reduce((a, b) => a + b, 0);
-    console.log("Potencia total:", totalPower);
     const deltaPower = sumPower(frequencies, 0.5, 4) / totalPower;
     const thetaPower = sumPower(frequencies, 4, 8) / totalPower;
     const alphaPower = sumPower(frequencies, 8, 14) / totalPower;
     const betaPower = sumPower(frequencies, 14, 30) / totalPower;
     const gammaPower = sumPower(frequencies, 30, 50) / totalPower;
-    console.log("Potencias calculadas - Delta:", deltaPower, "Theta:", thetaPower, "Alpha:", alphaPower, "Beta:", betaPower, "Gamma:", gammaPower);
     const powerData = [deltaPower * 100, thetaPower * 100, alphaPower * 100, betaPower * 100, gammaPower * 100];
-    console.log("Power Data:", powerData);
     frequencyChart.data.datasets[0].data = powerData;
-    console.log("Datos actualizados en el gráfico de frecuencias:", frequencyChart.data.datasets[0].data);
     frequencyChart.update();
 
     const relaxation = thetaPower + alphaPower;
@@ -178,7 +173,7 @@ function updateNeurofeedback(frequencies) {
             }
             break;
         default:
-            console.log('No se reconoce el protocolo de neurofeedback.');
+            console.error('No se reconoce el protocolo de neurofeedback.');
             break;
     }
 }
@@ -191,11 +186,9 @@ var lpFilter = new LowPassFilter(256, 50);
 var filtersEnabled = true;
 
 async function connectAndReadData() {
-    console.log("connectAndReadData function called.");
     try {
         muse = new Muse();
         await muse.connect();
-        console.log("Conectado exitosamente.");
         bubble_fn_MuseStatus("connected");
         adjustAmplitudeScale(512);
         updateIntervals.push(setInterval(updateBatteryLevel, 1000));
@@ -208,7 +201,6 @@ async function connectAndReadData() {
 function disconnect() {
     if (muse) {
         muse.disconnect();
-        console.log("Desconectado exitosamente.");
         bubble_fn_MuseStatus("disconnected");
         updateIntervals.forEach(clearInterval);
         updateIntervals = [];
@@ -221,15 +213,11 @@ function updateBatteryLevel() {
     }
 }
 
-function toggleFilters() {
-    filtersEnabled = document.getElementById('enableFilters').checked;
-}
-
 function readEEGData() {
     try {
         let eegValue = muse.eeg[selectedElectrodeIndex].read();
         if (eegValue !== null) {
-            let filteredValue = filtersEnabled ? lpFilter.filter(eegValue) : eegValue;
+            let filteredValue = lpFilter.filter(eegValue);
             filteredValue = Math.max(filteredValue, -400);
             processEEGData(Math.abs(filteredValue));
             addToRecording(Math.abs(filteredValue));
@@ -244,20 +232,15 @@ function readEEGData() {
 
 function adjustAmplitudeScale(newScale) {
     amplitudeScale = 500 / newScale;
-    document.getElementById('scaleValue').innerText = `${newScale.toFixed(1)}x`;
     bubble_fn_amplitudeScale(newScale);
 }
 
 function processEEGData(uVrms) {
-    console.log("processEEGData called with:", uVrms);
     eegBuffer.push(uVrms);
-    console.log("eegBuffer length:", eegBuffer.length);
     if (eegBuffer.length >= FFT_SIZE) {
-        console.log("Buffer lleno, calculando FFT...");
         const fft = new FFT(FFT_SIZE, 256);
         fft.forward(eegBuffer);
         const frequencies = fft.spectrum;
-        console.log("Frequencies calculated:", frequencies);
         if (frequencies && frequencies.length > 0) {
             updateNeurofeedback(frequencies);
         } else {
@@ -292,29 +275,32 @@ function fadeOutAudio() {
 }
 
 function enableAudioFeedback() {
-    console.log("Feedback de audio activado.");
     audioElement.play();
+}
+
+function stopAudioFeedback() {
+    fadeOutAudio();
+    setTimeout(() => {
+        audioElement.pause();
+        audioElement.currentTime = 0;
+    }, 2000);
 }
 
 function setRelaxationProtocol() {
     neurofeedbackProtocol = 'relaxation';
-    console.log('Protocolo de relajación activado.');
 }
 
 function setAttentionProtocol() {
     neurofeedbackProtocol = 'attention';
-    console.log('Protocolo de atención activado.');
 }
 
 function changeAudioSource(source) {
     audioElement.src = source;
     audioElement.load();
-    console.log('Fuente de audio cambiada a:', source);
 }
 
 function stopNeurofeedback() {
-    fadeOutAudio();
-    console.log('Neurofeedback detenido.');
+    stopAudioFeedback();
 }
 
 // Incorporando funciones de grabación
@@ -334,7 +320,6 @@ function startRecording() {
     attentiveSeconds = 0;
     neutralSeconds = 0;
     relaxedSeconds = 0;
-    console.log("Grabación iniciada.");
 }
 
 function addToRecording(value) {
@@ -354,7 +339,6 @@ function stopRecording() {
     }
     isRecording = false;
     sessionDuration = (Date.now() - sessionStartTime) / 1000;
-    console.log("Grabación detenida.");
     processRecordedData();
 }
 
@@ -376,7 +360,6 @@ function showFrequencyGraph() {
 // Exportar las funciones que necesitas usar en el HTML
 window.connectAndReadData = connectAndReadData;
 window.disconnect = disconnect;
-window.toggleFilters = toggleFilters;
 window.readEEGData = readEEGData;
 window.adjustAmplitudeScale = adjustAmplitudeScale;
 window.processEEGData = processEEGData;
