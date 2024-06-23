@@ -66,7 +66,7 @@ enableAudioFeedback();
 
 Reduce gradualmente el volumen del audio hasta silenciarlo.
 ```
-fadeOutAudio();
+stopAudioFeedback();
 ```
 
 **Protocolo de relajación**
