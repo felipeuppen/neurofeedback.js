@@ -12,7 +12,8 @@
 
 ## Requisitos
 
-Para utilizar **Neurofeedback.js**, necesitas incluir también **Muse.js** en tu proyecto. **Muse.js** se encarga de la conexión y la lectura de datos desde el dispositivo Muse.
+Para utilizar **Neurofeedback.js**, necesitas incluir también **[MuseJS](https://github.com/Respiire/MuseJS)
+** en tu proyecto. **Muse.js** se encarga de la conexión y la lectura de datos desde el dispositivo Muse.
 
 Conectar al dispositivo Muse y comenzar a leer datos
 ```
