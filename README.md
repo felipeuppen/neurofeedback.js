@@ -55,7 +55,7 @@ stopRecording();
 
 ## Feedback
 
-Primero, se realiza una Transformada Rápida de Fourier (FFT) sobre los datos EEG para obtener las amplitudes de diferentes bandas de frecuencia (Theta, Alpha, Beta, Gamma). Para cada banda de frecuencia, se calcula una proporción o ratio sobre la suma de todas las bandas relevantes (Alpha / (Theta + Alpha + Beta + Gamma)). El feedback auditivo proporciona una señal de audio basada en el protocolo de neurofeedback seleccionado. Esto puede ser útil para guiar a los usuarios hacia un estado mental específico.
+Primero, se realiza una Transformada Rápida de Fourier (FFT) sobre los datos EEG para obtener las amplitudes de diferentes bandas de frecuencia (Theta, Alpha, Beta, Gamma). Para cada banda de frecuencia, se calcula una proporción o ratio sobre la suma de todas las bandas relevantes (por ejemplo, Alpha / (Theta + Alpha + Beta + Gamma)). El feedback auditivo proporciona una señal de audio basada en el protocolo de neurofeedback seleccionado. Esto puede ser útil para guiar a los usuarios hacia un estado mental específico.
 
 **Activar feedback auditivo**
 ```
@@ -71,7 +71,7 @@ fadeOutAudio();
 
 **Protocolo de relajación**
 
-En este protocolo, se espera que las frecuencias Theta y Alpha sean altas mientras que las frecuencias Beta y Gamma son bajas. Esto se calcula utilizando la Transformada Rápida de Fourier (FFT) de las señales EEG. Los niveles de relajación se evalúan observando la relación entre estas bandas de frecuencia
+En este protocolo, se espera que las frecuencias Theta y Alpha sean altas mientras que las frecuencias Beta y Gamma son bajas. Esto se calcula utilizando la Transformada Rápida de Fourier (FFT) de las señales EEG. Los niveles de relajación se evalúan observando la relación entre estas bandas de frecuencia. Mientras más suba el volumen de la música, más relajada estará la persona. 
 
 ```
 setRelaxationProtocol();
@@ -79,7 +79,7 @@ setRelaxationProtocol();
 
 **Protocolo de atención**
 
-En este protocolo, se espera que las frecuencias Beta y Gamma sean altas mientras que las frecuencias Theta y Alpha son bajas. De nuevo, esto se calcula utilizando la FFT de las señales EEG. Los niveles de atención se evalúan observando la relación entre estas bandas de frecuencia.
+En este protocolo, se espera que las frecuencias Beta y Gamma sean altas mientras que las frecuencias Theta y Alpha son bajas. De nuevo, esto se calcula utilizando la FFT de las señales EEG. Los niveles de atención se evalúan observando la relación entre estas bandas de frecuencia. Mientras más suba el volumen de la música, más atenta estará la persona. 
 
 ```
 setAttentionProtocol();
