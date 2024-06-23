@@ -1,6 +1,6 @@
 # Neurofeedback.js
 
-**Neurofeedback.js** es una librería JavaScript diseñada para realizar procesamiento de señales EEG y proporcionar feedback en tiempo real utilizando dispositivos Muse. Esta librería permite la conexión y lectura de datos EEG desde un dispositivo Muse, el procesamiento de estos datos para obtener información sobre diferentes bandas de frecuencia, y la provisión de feedback auditivo basado en protocolos específicos de neurofeedback.
+**Neurofeedback.js** es una librería JavaScript diseñada para realizar procesamiento de señales EEG y proporcionar feedback en tiempo real utilizando dispositivos Muse 2. Esta librería permite la conexión y lectura de datos EEG desde un dispositivo Muse 2, el procesamiento de estos datos para obtener información sobre diferentes bandas de frecuencia, y la provisión de feedback auditivo basado en protocolos específicos de neurofeedback.
 
 ## Características
 
@@ -14,27 +14,43 @@
 
 Para utilizar **Neurofeedback.js**, necesitas incluir también **Muse.js** en tu proyecto. **Muse.js** se encarga de la conexión y la lectura de datos desde el dispositivo Muse.
 
-// Conectar al dispositivo Muse y comenzar a leer datos
+Conectar al dispositivo Muse y comenzar a leer datos
+```
 connectAndReadData();
+```
 
-// Desconectar del dispositivo Muse
+Desconectar del dispositivo Muse
+```
 disconnect();
+```
 
-// Ajustar la escala de amplitud para el procesamiento de señales
+Ajustar la escala de amplitud para el procesamiento de señales
+```
 adjustAmplitudeScale(newScale);
+```
 
-// Iniciar grabación
+Iniciar grabación
+```
 startRecording();
+```
 
-// Detener grabación
+Detener grabación
+```
 stopRecording();
+```
 
-// Activar feedback auditivo
+Activar feedback auditivo
+```
 enableAudioFeedback();
-
-// Cambiar el protocolo a relajación
+```
+Cambiar el protocolo a relajación
+```
 setRelaxationProtocol();
-
-// Cambiar el protocolo a atención
+```
+Cambiar el protocolo a atención
+```
 setAttentionProtocol();
+```
 
+Licencia
+Este proyecto está bajo la licencia MIT. Puedes consultar el archivo LICENSE para más detalles.
